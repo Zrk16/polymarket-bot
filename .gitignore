@@ -1,0 +1,5 @@
+.env
+ledger.json
+decisions.csv
+__pycache__/
+*.pyc
