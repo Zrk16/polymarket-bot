@@ -242,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Reset ───────────────────────────────────────────────────────
   function initReset() {
     const btn = document.getElementById("resetBtn");
+    const input = document.getElementById("resetBankroll");
     const msg = document.getElementById("resetMsg");
     if (!btn) return;
 
@@ -249,12 +250,21 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!confirm("Wipe all trades and reset bankroll? This can't be undone.")) return;
       btn.disabled = true;
       msg.textContent = "";
+
+      const rawAmount = input ? parseFloat(input.value) : NaN;
+      const body = (!isNaN(rawAmount) && rawAmount > 0) ? { bankroll: rawAmount } : {};
+
       try {
-        const res = await fetch("/api/reset", { method: "POST" });
+        const res = await fetch("/api/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
         const data = await res.json();
         if (res.ok) {
-          msg.textContent = `Reset done — bankroll restored to ${money(data.bankroll)}`;
+          msg.textContent = `Reset done — bankroll: ${money(data.bankroll)}`;
           msg.className = "add-funds__msg add-funds__msg--ok";
+          if (input) input.value = "";
           refresh();
         } else {
           msg.textContent = data.error || "Reset failed.";

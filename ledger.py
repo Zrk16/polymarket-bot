@@ -99,23 +99,27 @@ class Ledger:
         if amount <= 0:
             raise ValueError("Amount must be positive")
         self.data["bankroll"] = round(self.data["bankroll"] + amount, 2)
-        self.data["starting_bankroll"] = round(
-            self.data["starting_bankroll"] + amount, 2
-        )
+        # NOTE: starting_bankroll stays frozen at original value so reset()
+        # always restores to the original starting amount, not an inflated one.
         self._save()
         return self.data["bankroll"]
 
-    def reset(self):
-        """Wipe all trades and restore bankroll to starting amount."""
-        sb = self.data.get("starting_bankroll", self.data["bankroll"])
+    def reset(self, bankroll: float | None = None):
+        """
+        Wipe all trades and restore bankroll.
+
+        If bankroll is given, use that. Otherwise restore to the original
+        starting_bankroll (frozen at init, never inflated by add_funds).
+        """
+        sb = bankroll if bankroll is not None else self.data.get("starting_bankroll", 20.0)
         self.data = {
-            "bankroll": sb,
-            "starting_bankroll": sb,
+            "bankroll": round(sb, 2),
+            "starting_bankroll": round(sb, 2),
             "realized_pnl": 0.0,
             "trades": [],
         }
         self._save()
-        return sb
+        return round(sb, 2)
 
     def get_open_condition_ids(self):
         return {

@@ -109,7 +109,14 @@ def api_add_funds():
 def api_reset():
     if ledger is None:
         return jsonify({"error": "Bot not running yet"}), 400
-    new_bankroll = ledger.reset()
+    data = request.get_json(silent=True) or {}
+    bankroll = data.get("bankroll")
+    if bankroll is not None:
+        try:
+            bankroll = float(bankroll)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid bankroll value"}), 400
+    new_bankroll = ledger.reset(bankroll=bankroll)
     return jsonify({"bankroll": new_bankroll})
 
 
