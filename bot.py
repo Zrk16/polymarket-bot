@@ -29,7 +29,7 @@ load_dotenv()
 # ── Config ──────────────────────────────────────────────────────────
 BANKROLL = float(os.getenv("BANKROLL", "20.0"))
 BET_AMOUNT = float(os.getenv("BET_AMOUNT", "1.0"))
-CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.65"))
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.55"))
 MARKETS_PER_CYCLE = int(os.getenv("MARKETS_PER_CYCLE", "20"))
 SLEEP_SECONDS = int(os.getenv("SLEEP_SECONDS", "1800"))
 MIN_LIQUIDITY = 1000  # Skip thin markets
