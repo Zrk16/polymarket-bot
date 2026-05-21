@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polymarket Bot — Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">
+        <span class="nav__logo-icon">&#9679;</span>
+        polymarket bot
+      </a>
+      <div class="nav__status">
+        <span class="nav__pulse" id="botPulse"></span>
+        <span class="nav__status-text" id="botStatus">connecting...</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero__content reveal">
+        <p class="hero__eyebrow">Paper Trading Dashboard</p>
+        <h1 class="hero__title">Live Portfolio</h1>
+        <p class="hero__sub">AI-powered prediction market analysis. Every cycle, every bet, tracked in real time.</p>
+      </div>
+    </section>
+
+    <!-- Stats Cards -->
+    <section class="stats" id="statsSection">
+      <div class="stats__grid">
+        <article class="stat reveal">
+          <p class="stat__label">Total Value</p>
+          <p class="stat__value" id="totalValue">$0.00</p>
+        </article>
+        <article class="stat reveal">
+          <p class="stat__label">Cash</p>
+          <p class="stat__value" id="cashValue">$0.00</p>
+        </article>
+        <article class="stat reveal">
+          <p class="stat__label">Realized P&L</p>
+          <p class="stat__value" id="realizedPnl">$0.00</p>
+        </article>
+        <article class="stat reveal">
+          <p class="stat__label">Unrealized P&L</p>
+          <p class="stat__value" id="unrealizedPnl">$0.00</p>
+        </article>
+        <article class="stat reveal">
+          <p class="stat__label">Open</p>
+          <p class="stat__value" id="openCount">0</p>
+        </article>
+        <article class="stat reveal">
+          <p class="stat__label">Win / Loss</p>
+          <p class="stat__value" id="winLoss">0 / 0</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Open Positions -->
+    <section class="panel" id="positionsSection">
+      <div class="panel__header reveal">
+        <h2 class="panel__title">Open Positions</h2>
+        <p class="panel__sub" id="positionsCount">0 active</p>
+      </div>
+      <div class="panel__body">
+        <div class="table-wrap reveal">
+          <table class="table" id="positionsTable">
+            <thead>
+              <tr>
+                <th>Market</th>
+                <th>Direction</th>
+                <th>Entry</th>
+                <th>Current</th>
+                <th>Bet</th>
+                <th>P&L</th>
+              </tr>
+            </thead>
+            <tbody id="positionsBody">
+              <tr class="table__empty">
+                <td colspan="6">No open positions yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trade History -->
+    <section class="panel" id="historySection">
+      <div class="panel__header reveal">
+        <h2 class="panel__title">Trade History</h2>
+        <p class="panel__sub" id="historyCount">0 trades</p>
+      </div>
+      <div class="panel__body">
+        <div class="table-wrap reveal">
+          <table class="table" id="historyTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Market</th>
+                <th>Direction</th>
+                <th>Entry</th>
+                <th>Result</th>
+                <th>P&L</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr class="table__empty">
+                <td colspan="6">No resolved trades yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Decisions -->
+    <section class="panel" id="decisionsSection">
+      <div class="panel__header reveal">
+        <h2 class="panel__title">Recent AI Decisions</h2>
+        <p class="panel__sub">Last 50 analyses</p>
+      </div>
+      <div class="panel__body">
+        <div class="table-wrap reveal">
+          <table class="table" id="decisionsTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Market</th>
+                <th>Direction</th>
+                <th>Confidence</th>
+                <th>Reasoning</th>
+              </tr>
+            </thead>
+            <tbody id="decisionsBody">
+              <tr class="table__empty">
+                <td colspan="5">No decisions logged yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Setup Guide -->
+    <section class="setup" id="setupSection">
+      <div class="setup__header reveal">
+        <h2 class="setup__title">Setup Guide</h2>
+        <p class="setup__sub">Get the bot running in under 5 minutes.</p>
+      </div>
+
+      <div class="setup__steps">
+        <article class="step reveal">
+          <div class="step__number">01</div>
+          <div class="step__body">
+            <h3 class="step__title">Get a Groq API Key</h3>
+            <p class="step__text">Sign up at <a href="https://console.groq.com" target="_blank" rel="noopener" class="link">console.groq.com</a> — free tier, no card needed. Create an API key and copy it.</p>
+          </div>
+        </article>
+
+        <article class="step reveal">
+          <div class="step__number">02</div>
+          <div class="step__body">
+            <h3 class="step__title">Clone & Install</h3>
+            <pre class="step__code"><code>git clone https://github.com/YOUR_USER/polymarket-bot.git
+cd polymarket-bot
+pip install -r requirements.txt</code></pre>
+          </div>
+        </article>
+
+        <article class="step reveal">
+          <div class="step__number">03</div>
+          <div class="step__body">
+            <h3 class="step__title">Configure Environment</h3>
+            <p class="step__text">Copy the example env file and paste your Groq key.</p>
+            <pre class="step__code"><code>cp .env.example .env</code></pre>
+            <div class="step__config">
+              <div class="step__config-row">
+                <span class="step__config-key">GROQ_API_KEY</span>
+                <span class="step__config-val">your key from step 1</span>
+              </div>
+              <div class="step__config-row">
+                <span class="step__config-key">BANKROLL</span>
+                <span class="step__config-val">20.0 (fake starting cash)</span>
+              </div>
+              <div class="step__config-row">
+                <span class="step__config-key">BET_AMOUNT</span>
+                <span class="step__config-val">1.0 (per-bet size)</span>
+              </div>
+              <div class="step__config-row">
+                <span class="step__config-key">CONFIDENCE_THRESHOLD</span>
+                <span class="step__config-val">0.65 (min AI confidence)</span>
+              </div>
+              <div class="step__config-row">
+                <span class="step__config-key">SLEEP_SECONDS</span>
+                <span class="step__config-val">1800 (30 min cycles)</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step reveal">
+          <div class="step__number">04</div>
+          <div class="step__body">
+            <h3 class="step__title">Run Locally</h3>
+            <p class="step__text">CLI-only mode (no dashboard):</p>
+            <pre class="step__code"><code>python bot.py</code></pre>
+            <p class="step__text">With dashboard:</p>
+            <pre class="step__code"><code>python server.py</code></pre>
+            <p class="step__text">Dashboard runs on <code class="inline-code">localhost:8000</code>.</p>
+          </div>
+        </article>
+
+        <article class="step reveal">
+          <div class="step__number">05</div>
+          <div class="step__body">
+            <h3 class="step__title">Deploy to Koyeb</h3>
+            <p class="step__text">Push to GitHub, then deploy on <a href="https://koyeb.com" target="_blank" rel="noopener" class="link">koyeb.com</a>:</p>
+            <ol class="step__list">
+              <li>Create Service &rarr; GitHub &rarr; pick your repo</li>
+              <li>Builder: Buildpack &bull; Instance: Free nano</li>
+              <li>Service type: <strong>Web</strong></li>
+              <li>Add <code class="inline-code">GROQ_API_KEY</code> in environment variables</li>
+              <li>Deploy — bot + dashboard run 24/7</li>
+            </ol>
+          </div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <p class="footer__text">Polymarket Paper Trading Bot &mdash; not financial advice</p>
+      <p class="footer__text footer__text--muted">Groq AI &bull; llama3-70b &bull; Polymarket Gamma API</p>
+    </div>
+  </footer>
+
+  <script src="/static/script.js" defer></script>
+</body>
+</html>
