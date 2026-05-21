@@ -1,47 +1,69 @@
 """
-Web search helper — fetches DuckDuckGo snippets for a market question.
-Free, no API key needed. Used to give the AI real-world context before analysis.
+Web research agent — fetches DuckDuckGo snippets for a market question.
+
+Runs two targeted queries:
+  1. Direct question — what's actually happening
+  2. Recent news angle — latest developments
+
+Deduplicates results and returns a formatted block for the AI prompt.
+No API key needed.
 """
 
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
-MAX_RESULTS = 4
-MAX_CHARS_PER_SNIPPET = 300
-MAX_TOTAL_CHARS = 900
+MAX_RESULTS_PER_QUERY = 4
+MAX_CHARS_PER_SNIPPET = 280
+MAX_TOTAL_CHARS = 1800
+
+
+def _run_query(query: str) -> list:
+    try:
+        return DDGS().text(query, max_results=MAX_RESULTS_PER_QUERY) or []
+    except Exception as e:
+        print(f"  [search] Query failed: {e}")
+        return []
 
 
 def fetch_context(question: str) -> str:
     """
-    Search DuckDuckGo for the market question and return a formatted
-    block of snippets to inject into the AI prompt.
-    Returns empty string on any failure so the bot always continues.
+    Run 2 targeted searches and return formatted research block.
+    Returns empty string on any failure — bot always continues.
     """
-    try:
-        query = f"{question} 2025"
-        results = DDGS().text(query, max_results=MAX_RESULTS)
+    queries = [
+        question,
+        f"{question} latest update 2025",
+    ]
 
-        if not results:
-            return ""
+    all_results = []
+    seen = set()
 
-        lines = []
-        total = 0
-        for r in results:
-            snippet = (r.get("body") or "").strip()
-            if not snippet:
+    for query in queries:
+        for r in _run_query(query):
+            title = r.get("title", "")
+            if title in seen:
                 continue
-            snippet = snippet[:MAX_CHARS_PER_SNIPPET]
-            source = r.get("title", "")
-            line = f"- [{source}] {snippet}"
-            total += len(line)
-            if total > MAX_TOTAL_CHARS:
-                break
-            lines.append(line)
+            seen.add(title)
+            all_results.append(r)
 
-        if not lines:
-            return ""
-
-        return "Recent web search results:\n" + "\n".join(lines)
-
-    except Exception as e:
-        print(f"  [search] Failed: {e}")
+    if not all_results:
         return ""
+
+    lines = []
+    total = 0
+    for r in all_results:
+        snippet = (r.get("body") or "").strip()[:MAX_CHARS_PER_SNIPPET]
+        if not snippet:
+            continue
+        title = r.get("title", "Source")
+        date = r.get("published", "")
+        date_str = f" | {date}" if date else ""
+        line = f"• [{title}{date_str}] {snippet}"
+        total += len(line)
+        if total > MAX_TOTAL_CHARS:
+            break
+        lines.append(line)
+
+    if not lines:
+        return ""
+
+    return "=== Research ===\n" + "\n".join(lines) + "\n================"
