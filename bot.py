@@ -31,7 +31,7 @@ load_dotenv()
 BANKROLL = float(os.getenv("BANKROLL", "20.0"))
 BET_AMOUNT = float(os.getenv("BET_AMOUNT", "1.0"))
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.55"))
-MARKETS_PER_CYCLE = int(os.getenv("MARKETS_PER_CYCLE", "20"))
+MARKETS_PER_CYCLE = int(os.getenv("MARKETS_PER_CYCLE", "50"))
 SLEEP_SECONDS = int(os.getenv("SLEEP_SECONDS", "1800"))
 MIN_LIQUIDITY = 1000  # Skip thin markets
 MAX_BET_FRACTION = float(os.getenv("MAX_BET_FRACTION", "0.10"))  # Max % of bankroll per bet
@@ -136,10 +136,13 @@ def run_cycle(ledger, cycle_num):
             return 9999
 
     before = len(candidates)
-    candidates = [m for m in candidates if days_until_close(m) <= MAX_DAYS_TO_CLOSE]
+    candidates = [
+        m for m in candidates
+        if 0 <= days_until_close(m) <= MAX_DAYS_TO_CLOSE
+    ]
     far_dropped = before - len(candidates)
     if far_dropped:
-        print(f"  Dropped {far_dropped} markets closing > {MAX_DAYS_TO_CLOSE} days away")
+        print(f"  Dropped {far_dropped} markets (past end_date or > {MAX_DAYS_TO_CLOSE} days away)")
 
     if candidates:
         soonest = candidates[0].get("end_date", "unknown")
