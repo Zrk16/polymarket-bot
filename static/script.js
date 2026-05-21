@@ -239,6 +239,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ── Reset ───────────────────────────────────────────────────────
+  function initReset() {
+    const btn = document.getElementById("resetBtn");
+    const msg = document.getElementById("resetMsg");
+    if (!btn) return;
+
+    btn.addEventListener("click", async () => {
+      if (!confirm("Wipe all trades and reset bankroll? This can't be undone.")) return;
+      btn.disabled = true;
+      msg.textContent = "";
+      try {
+        const res = await fetch("/api/reset", { method: "POST" });
+        const data = await res.json();
+        if (res.ok) {
+          msg.textContent = `Reset done — bankroll restored to ${money(data.bankroll)}`;
+          msg.className = "add-funds__msg add-funds__msg--ok";
+          refresh();
+        } else {
+          msg.textContent = data.error || "Reset failed.";
+          msg.className = "add-funds__msg add-funds__msg--err";
+        }
+      } catch {
+        msg.textContent = "Network error.";
+        msg.className = "add-funds__msg add-funds__msg--err";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
   // ── Scroll reveals ──────────────────────────────────────────────
   function initReveals() {
     const targets = document.querySelectorAll(".reveal");
@@ -280,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initReveals();
   initAddFunds();
+  initReset();
   refresh();
   setInterval(refresh, REFRESH_MS);
 });

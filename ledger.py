@@ -105,6 +105,18 @@ class Ledger:
         self._save()
         return self.data["bankroll"]
 
+    def reset(self):
+        """Wipe all trades and restore bankroll to starting amount."""
+        sb = self.data.get("starting_bankroll", self.data["bankroll"])
+        self.data = {
+            "bankroll": sb,
+            "starting_bankroll": sb,
+            "realized_pnl": 0.0,
+            "trades": [],
+        }
+        self._save()
+        return sb
+
     def get_open_condition_ids(self):
         return {
             t["market_id"]

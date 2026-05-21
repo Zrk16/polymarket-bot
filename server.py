@@ -105,6 +105,14 @@ def api_add_funds():
         return jsonify({"error": str(e)}), 400
 
 
+@app.route("/api/reset", methods=["POST"])
+def api_reset():
+    if ledger is None:
+        return jsonify({"error": "Bot not running yet"}), 400
+    new_bankroll = ledger.reset()
+    return jsonify({"bankroll": new_bankroll})
+
+
 if __name__ == "__main__":
     if not os.getenv("GROQ_API_KEY"):
         print("WARNING: GROQ_API_KEY not set — bot loop disabled, dashboard-only mode")

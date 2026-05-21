@@ -731,6 +731,22 @@ body::after {
 .add-funds__msg--ok  { color: var(--accent); }
 .add-funds__msg--err { color: var(--red); }
 
+.add-funds__inner--reset {
+  margin-top: var(--space-sm);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.add-funds__btn--reset {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+
+.add-funds__btn--reset:hover {
+  background: var(--red-dim);
+  opacity: 1;
+}
+
 
 /* ── Reduced Motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
