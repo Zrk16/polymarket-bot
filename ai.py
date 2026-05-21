@@ -9,6 +9,7 @@ import json
 import os
 
 from groq import Groq
+from search import fetch_context
 
 _client = None
 
@@ -39,11 +40,12 @@ Respond ONLY with valid JSON in this exact format:
 }
 
 Guidelines:
+- Use the web search results to inform your probability estimate
 - Bet whenever your estimated probability diverges from the market price by 5% or more
 - "confidence" = how confident you are in your probability estimate (0.55+ is fine)
 - It is OK to bet — this is paper trading, not real money
 - Pick the direction that makes money if your estimate is correct
-- Only skip if you have zero knowledge of the topic
+- Only skip if you have zero knowledge of the topic even after reading the search results
 """
 
 
@@ -57,17 +59,23 @@ def analyze_market(market):
     yes_price = market["yes_price"]
     no_price = market["no_price"]
 
+    # Fetch live web context so the AI knows what's actually happening
+    web_context = fetch_context(market["question"])
+
     prompt = (
         f"Market: {market['question']}\n"
         f"Description: {market['description'] or 'No description available'}\n"
+        f"End date: {market['end_date']}\n"
         f"\n"
         f"Current YES price: ${yes_price:.3f} ({yes_price * 100:.1f}% implied)\n"
         f"Current NO price:  ${no_price:.3f} ({no_price * 100:.1f}% implied)\n"
         f"Liquidity: ${market['liquidity']:,.0f}\n"
-        f"End date: {market['end_date']}\n"
-        f"\n"
-        f"Is this market mispriced? Should I bet YES or NO?"
     )
+
+    if web_context:
+        prompt += f"\n{web_context}\n"
+
+    prompt += "\nIs this market mispriced based on the latest information? Should I bet YES or NO?"
 
     try:
         response = _get_client().chat.completions.create(
