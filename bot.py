@@ -35,6 +35,9 @@ MARKETS_PER_CYCLE = int(os.getenv("MARKETS_PER_CYCLE", "20"))
 SLEEP_SECONDS = int(os.getenv("SLEEP_SECONDS", "1800"))
 MIN_LIQUIDITY = 1000  # Skip thin markets
 MAX_BET_FRACTION = float(os.getenv("MAX_BET_FRACTION", "0.10"))  # Max % of bankroll per bet
+MAX_DAYS_TO_CLOSE = int(os.getenv("MAX_DAYS_TO_CLOSE", "14"))    # Skip markets closing further than this
+MAX_OPEN_POSITIONS = int(os.getenv("MAX_OPEN_POSITIONS", "20"))  # Never hold more than this many bets at once
+BANKROLL_RESERVE = float(os.getenv("BANKROLL_RESERVE", "0.20"))  # Always keep this fraction of starting bankroll as cash
 
 
 def kelly_bet(confidence, entry_odds, bankroll):
@@ -72,6 +75,9 @@ def print_banner():
     print(f"  Confidence:  {CONFIDENCE_THRESHOLD}")
     print(f"  Cycle:       every {SLEEP_SECONDS // 60} min")
     print(f"  Markets:     top {MARKETS_PER_CYCLE} by liquidity")
+    print(f"  Max close:   {MAX_DAYS_TO_CLOSE} days out")
+    print(f"  Max open:    {MAX_OPEN_POSITIONS} positions")
+    print(f"  Reserve:     {BANKROLL_RESERVE * 100:.0f}% cash floor")
     print("=" * 55)
     print()
 
@@ -115,15 +121,46 @@ def run_cycle(ledger, cycle_num):
             return datetime.max.replace(tzinfo=timezone.utc)
 
     candidates.sort(key=closing_key)
+
+    # 4b. Drop markets closing too far away — money locked up there = dead capital
+    now = datetime.now(timezone.utc)
+
+    def days_until_close(m):
+        raw = m.get("end_date", "")
+        if not raw:
+            return 9999  # no end date = treat as far future
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            return (dt - now).days
+        except ValueError:
+            return 9999
+
+    before = len(candidates)
+    candidates = [m for m in candidates if days_until_close(m) <= MAX_DAYS_TO_CLOSE]
+    far_dropped = before - len(candidates)
+    if far_dropped:
+        print(f"  Dropped {far_dropped} markets closing > {MAX_DAYS_TO_CLOSE} days away")
+
     if candidates:
         soonest = candidates[0].get("end_date", "unknown")
         print(f"  Prioritised by closing date — soonest: {soonest}")
 
-    # 4b. AI analysis + paper trading
+    # 4c. AI analysis + paper trading
     bets_placed = 0
     for market in candidates:
         if market["liquidity"] < MIN_LIQUIDITY:
             continue
+
+        # Cap total open positions — don't lock up all capital
+        if len(ledger.get_open_condition_ids()) >= MAX_OPEN_POSITIONS:
+            print(f"  ** Max open positions ({MAX_OPEN_POSITIONS}) reached — waiting for resolutions **")
+            break
+
+        # Keep a cash reserve — never bet below this floor
+        reserve = ledger.data.get("starting_bankroll", BANKROLL) * BANKROLL_RESERVE
+        if ledger.available_bankroll() <= reserve:
+            print(f"  ** Bankroll at reserve floor (${reserve:.2f}) — holding cash **")
+            break
 
         # Ask Groq AI for analysis
         decision = analyze_market(market)
@@ -141,9 +178,9 @@ def run_cycle(ledger, cycle_num):
             )
             continue
 
-        # Check bankroll
-        if ledger.available_bankroll() < BET_AMOUNT:
-            print("  ** Out of bankroll — skipping remaining markets **")
+        # Check bankroll (above reserve)
+        if ledger.available_bankroll() - BET_AMOUNT < reserve:
+            print("  ** Next bet would breach reserve — stopping **")
             break
 
         # Place paper trade
