@@ -16,6 +16,7 @@ Architecture based on patterns from:
 import os
 import sys
 import time
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
@@ -100,7 +101,25 @@ def run_cycle(ledger, cycle_num):
     if skipped:
         print(f"  Skipping {skipped} markets with open positions")
 
-    # 4. AI analysis + paper trading
+    # 4a. Sort by closing soonest first — money comes back faster for reinvestment.
+    #     Markets with no end_date go to the end.
+    def closing_key(m):
+        raw = m.get("end_date", "")
+        if not raw:
+            return datetime.max.replace(tzinfo=timezone.utc)
+        try:
+            # Gamma returns ISO strings like "2025-06-15T00:00:00Z"
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            return dt
+        except ValueError:
+            return datetime.max.replace(tzinfo=timezone.utc)
+
+    candidates.sort(key=closing_key)
+    if candidates:
+        soonest = candidates[0].get("end_date", "unknown")
+        print(f"  Prioritised by closing date — soonest: {soonest}")
+
+    # 4b. AI analysis + paper trading
     bets_placed = 0
     for market in candidates:
         if market["liquidity"] < MIN_LIQUIDITY:
