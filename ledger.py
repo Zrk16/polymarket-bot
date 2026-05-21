@@ -125,6 +125,7 @@ class Ledger:
             if winner is None:
                 # Market voided — refund the bet
                 trade["status"] = "voided"
+                trade["resolved_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
                 trade["final_pnl"] = 0.0
                 trade["unrealized_pnl"] = 0.0
                 self.data["bankroll"] += trade["bet_amount"]
@@ -141,6 +142,7 @@ class Ledger:
                 label = "LOSS"
 
             trade["status"] = "resolved"
+            trade["resolved_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
             trade["final_pnl"] = round(final_pnl, 4)
             trade["current_odds"] = 1.0 if winner == trade["direction"] else 0.0
             trade["unrealized_pnl"] = 0.0

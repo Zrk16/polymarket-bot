@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const pnl = parseFloat(t.unrealized_pnl) || 0;
         const dirClass = t.direction === "YES" ? "badge--yes" : "badge--no";
         return `<tr>
-          <td>${truncate(t.question, 50)}</td>
+          <td>${truncate(t.market_title || t.question, 50)}</td>
           <td><span class="badge ${dirClass}">${t.direction}</span></td>
           <td>${parseFloat(t.entry_odds).toFixed(3)}</td>
           <td>${parseFloat(t.current_price || t.entry_odds).toFixed(3)}</td>
@@ -139,13 +139,13 @@ document.addEventListener("DOMContentLoaded", () => {
     els.historyBody.innerHTML = trades
       .reverse()
       .map((t) => {
-        const pnl = parseFloat(t.realized_pnl) || 0;
+        const pnl = parseFloat(t.final_pnl) || 0;
         const dirClass = t.direction === "YES" ? "badge--yes" : "badge--no";
         const resultClass = pnl >= 0 ? "badge--win" : "badge--loss";
         const resultText = pnl >= 0 ? "WIN" : "LOSS";
         return `<tr>
           <td>${t.resolved_at || t.placed_at || "—"}</td>
-          <td>${truncate(t.question, 45)}</td>
+          <td>${truncate(t.market_title || t.question, 45)}</td>
           <td><span class="badge ${dirClass}">${t.direction}</span></td>
           <td>${parseFloat(t.entry_odds).toFixed(3)}</td>
           <td><span class="badge ${resultClass}">${resultText}</span></td>
