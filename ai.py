@@ -71,7 +71,7 @@ def analyze_market(market):
 
     try:
         response = _get_client().chat.completions.create(
-            model="llama3-70b-8192",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
