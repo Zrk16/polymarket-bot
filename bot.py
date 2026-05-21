@@ -33,6 +33,33 @@ CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.55"))
 MARKETS_PER_CYCLE = int(os.getenv("MARKETS_PER_CYCLE", "20"))
 SLEEP_SECONDS = int(os.getenv("SLEEP_SECONDS", "1800"))
 MIN_LIQUIDITY = 1000  # Skip thin markets
+MAX_BET_FRACTION = float(os.getenv("MAX_BET_FRACTION", "0.10"))  # Max % of bankroll per bet
+
+
+def kelly_bet(confidence, entry_odds, bankroll):
+    """
+    Half-Kelly bet sizing. Bets more when AI is more confident.
+
+    Kelly formula: f = (p*b - (1-p)) / b
+      p = AI confidence (probability we're right)
+      b = net payout per $1 risked = (1 - entry_odds) / entry_odds
+    Half-Kelly = f * 0.5  (safer, reduces variance)
+
+    Result clamped between BET_AMOUNT and MAX_BET_FRACTION of bankroll.
+    """
+    if entry_odds <= 0 or entry_odds >= 1:
+        return BET_AMOUNT
+
+    b = (1 - entry_odds) / entry_odds  # net odds
+    f = (confidence * b - (1 - confidence)) / b  # Kelly fraction
+    f = max(0, f) * 0.5  # Half-Kelly, floor at 0
+
+    raw = f * bankroll
+    # Clamp: never less than base bet, never more than MAX_BET_FRACTION of bankroll
+    return round(
+        max(BET_AMOUNT, min(raw, bankroll * MAX_BET_FRACTION)),
+        2
+    )
 
 
 def print_banner():
@@ -109,29 +136,26 @@ def run_cycle(ledger, cycle_num):
             market["yes_token_id"] if direction == "YES" else market["no_token_id"]
         )
 
-        # TODO: Real execution would go here —
-        # 1. from py_clob_client import ClobClient
-        # 2. client = ClobClient(host, key=key, chain_id=137)
-        # 3. order = client.create_and_post_order(OrderArgs(
-        #        token_id=token_id,
-        #        price=entry_odds,
-        #        size=BET_AMOUNT / entry_odds,
-        #        side=BUY,
-        #    ))
-        # 4. Confirm fill, record actual execution price
+        # Kelly-scaled bet size (more confidence = bigger bet)
+        bet_amount = kelly_bet(
+            confidence=decision["confidence"],
+            entry_odds=entry_odds,
+            bankroll=ledger.available_bankroll(),
+        )
+        bet_amount = min(bet_amount, ledger.available_bankroll())
 
         ledger.place_trade(
             market=market,
             direction=direction,
             entry_odds=entry_odds,
             token_id=token_id,
-            bet_amount=BET_AMOUNT,
+            bet_amount=bet_amount,
         )
         bets_placed += 1
 
         print(
             f"  BET {direction:3s} {market['question'][:45]}  "
-            f"@ {entry_odds:.3f}  conf={decision['confidence']:.2f}"
+            f"@ {entry_odds:.3f}  conf={decision['confidence']:.2f}  size=${bet_amount:.2f}"
         )
         print(f"         {decision['reasoning']}")
 

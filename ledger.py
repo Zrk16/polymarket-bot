@@ -8,6 +8,11 @@ P&L math (prediction market basics):
   - If your outcome wins: each share pays $1.00. Profit = shares - bet.
   - If your outcome loses: shares worth $0. Loss = full bet amount.
   - Unrealized P&L = (shares * current_price) - bet_amount.
+
+Persistence:
+  - Saves to ledger.json locally.
+  - If HF_TOKEN + HF_DATASET_REPO env vars are set, also syncs to a
+    Hugging Face dataset repo so data survives Space rebuilds.
 """
 
 import json
@@ -18,6 +23,43 @@ import uuid
 from fetcher import get_live_price, is_market_resolved
 
 LEDGER_FILE = "ledger.json"
+
+_HF_TOKEN = os.getenv("HF_TOKEN")
+_HF_REPO = os.getenv("HF_DATASET_REPO")  # e.g. "zrk2010/polymarket-data"
+
+
+def _hf_push(local_path):
+    """Push ledger.json to HF Dataset repo (fire-and-forget, never crashes)."""
+    if not (_HF_TOKEN and _HF_REPO):
+        return
+    try:
+        from huggingface_hub import HfApi
+        HfApi(token=_HF_TOKEN).upload_file(
+            path_or_fileobj=local_path,
+            path_in_repo="ledger.json",
+            repo_id=_HF_REPO,
+            repo_type="dataset",
+        )
+    except Exception as e:
+        print(f"  [ledger] HF sync failed: {e}")
+
+
+def _hf_pull():
+    """Pull ledger.json from HF Dataset repo. Returns dict or {}."""
+    if not (_HF_TOKEN and _HF_REPO):
+        return {}
+    try:
+        from huggingface_hub import hf_hub_download
+        path = hf_hub_download(
+            repo_id=_HF_REPO,
+            filename="ledger.json",
+            repo_type="dataset",
+            token=_HF_TOKEN,
+        )
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 
 class Ledger:
@@ -32,6 +74,12 @@ class Ledger:
             self._save()
 
     def _load(self):
+        # 1. Try HF Dataset (survives rebuilds)
+        data = _hf_pull()
+        if data:
+            print("  [ledger] Loaded from HF Dataset")
+            return data
+        # 2. Fall back to local file
         if os.path.exists(LEDGER_FILE):
             with open(LEDGER_FILE, "r") as f:
                 return json.load(f)
@@ -40,8 +88,21 @@ class Ledger:
     def _save(self):
         with open(LEDGER_FILE, "w") as f:
             json.dump(self.data, f, indent=2)
+        _hf_push(LEDGER_FILE)
 
     def available_bankroll(self):
+        return self.data["bankroll"]
+
+    def add_funds(self, amount: float):
+        """Add paper money to the bankroll (dashboard top-up)."""
+        amount = round(float(amount), 2)
+        if amount <= 0:
+            raise ValueError("Amount must be positive")
+        self.data["bankroll"] = round(self.data["bankroll"] + amount, 2)
+        self.data["starting_bankroll"] = round(
+            self.data["starting_bankroll"] + amount, 2
+        )
+        self._save()
         return self.data["bankroll"]
 
     def get_open_condition_ids(self):
@@ -54,13 +115,6 @@ class Ledger:
     def place_trade(self, market, direction, entry_odds, token_id, bet_amount):
         """
         Record a paper trade. Deducts bet_amount from bankroll.
-
-        # TODO: Real execution would go here —
-        # 1. Build order via py-clob-client
-        # 2. Sign with wallet private key
-        # 3. Submit to CLOB API: POST /order
-        # 4. Wait for fill confirmation
-        # 5. Record actual fill price (may differ from midpoint)
         """
         shares = round(bet_amount / entry_odds, 6)
 
@@ -76,20 +130,20 @@ class Ledger:
             "shares": shares,
             "current_odds": entry_odds,
             "unrealized_pnl": 0.0,
+            "end_date": market.get("end_date", ""),
             "status": "open",
             "final_pnl": None,
+            "resolved_at": None,
         }
 
         self.data["trades"].append(trade)
         self.data["bankroll"] -= bet_amount
+        self.data["bankroll"] = round(self.data["bankroll"], 2)
         self._save()
         return trade
 
     def update_unrealized_pnl(self):
-        """
-        Fetch live prices for all open positions and recalculate
-        unrealized P&L: (shares * current_price) - bet_amount.
-        """
+        """Fetch live prices for all open positions and recalculate unrealized P&L."""
         for trade in self.data["trades"]:
             if trade["status"] != "open":
                 continue
@@ -105,15 +159,7 @@ class Ledger:
         self._save()
 
     def check_resolutions(self):
-        """
-        Check each open position — has the market resolved?
-        If yes, calculate final P&L and close the trade.
-
-        # TODO: Real bot would also:
-        # 1. Call redeem endpoint to claim winnings
-        # 2. Verify on-chain settlement
-        # 3. Update wallet USDC balance
-        """
+        """Check each open position — has the market resolved?"""
         for trade in self.data["trades"]:
             if trade["status"] != "open":
                 continue
@@ -123,7 +169,6 @@ class Ledger:
                 continue
 
             if winner is None:
-                # Market voided — refund the bet
                 trade["status"] = "voided"
                 trade["resolved_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
                 trade["final_pnl"] = 0.0

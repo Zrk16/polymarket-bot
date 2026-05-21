@@ -13,7 +13,7 @@ import os
 import threading
 import time
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
 from bot import run_cycle, SLEEP_SECONDS, BANKROLL
 from ledger import Ledger, LEDGER_FILE
@@ -91,6 +91,18 @@ def api_decisions():
 @app.route("/api/bot")
 def api_bot():
     return jsonify(bot_state)
+
+
+@app.route("/api/add-funds", methods=["POST"])
+def api_add_funds():
+    if ledger is None:
+        return jsonify({"error": "Bot not running yet"}), 400
+    try:
+        amount = float(request.json.get("amount", 0))
+        new_balance = ledger.add_funds(amount)
+        return jsonify({"bankroll": new_balance})
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": str(e)}), 400
 
 
 if __name__ == "__main__":

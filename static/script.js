@@ -104,11 +104,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function formatDate(str) {
+    if (!str) return "—";
+    const d = new Date(str);
+    if (isNaN(d)) return str;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
   function renderPositions(trades) {
     els.positionsCount.textContent = `${trades.length} active`;
 
     if (!trades.length) {
-      els.positionsBody.innerHTML = emptyRow(6, "No open positions yet");
+      els.positionsBody.innerHTML = emptyRow(7, "No open positions yet");
       return;
     }
 
@@ -120,9 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${truncate(t.market_title || t.question, 50)}</td>
           <td><span class="badge ${dirClass}">${t.direction}</span></td>
           <td>${parseFloat(t.entry_odds).toFixed(3)}</td>
-          <td>${parseFloat(t.current_price || t.entry_odds).toFixed(3)}</td>
+          <td>${parseFloat(t.current_odds || t.entry_odds).toFixed(3)}</td>
           <td>${money(t.bet_amount)}</td>
           <td class="${pnlClass(pnl)}">${signedMoney(pnl)}</td>
+          <td>${formatDate(t.end_date)}</td>
         </tr>`;
       })
       .join("");
@@ -190,6 +198,47 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ── Add Funds ───────────────────────────────────────────────────
+  function initAddFunds() {
+    const btn = document.getElementById("addFundsBtn");
+    const input = document.getElementById("addFundsAmount");
+    const msg = document.getElementById("addFundsMsg");
+    if (!btn || !input) return;
+
+    btn.addEventListener("click", async () => {
+      const amount = parseFloat(input.value);
+      if (!amount || amount <= 0) {
+        msg.textContent = "Enter a valid amount.";
+        msg.className = "add-funds__msg add-funds__msg--err";
+        return;
+      }
+      btn.disabled = true;
+      msg.textContent = "";
+      try {
+        const res = await fetch("/api/add-funds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          msg.textContent = `Added ${money(amount)} — new balance: ${money(data.bankroll)}`;
+          msg.className = "add-funds__msg add-funds__msg--ok";
+          input.value = "";
+          fetchStatus();
+        } else {
+          msg.textContent = data.error || "Failed.";
+          msg.className = "add-funds__msg add-funds__msg--err";
+        }
+      } catch {
+        msg.textContent = "Network error.";
+        msg.className = "add-funds__msg add-funds__msg--err";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
   // ── Scroll reveals ──────────────────────────────────────────────
   function initReveals() {
     const targets = document.querySelectorAll(".reveal");
@@ -230,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   initReveals();
+  initAddFunds();
   refresh();
   setInterval(refresh, REFRESH_MS);
 });

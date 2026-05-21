@@ -67,6 +67,18 @@
       </div>
     </section>
 
+    <!-- Add Funds -->
+    <section class="add-funds reveal">
+      <div class="add-funds__inner">
+        <p class="add-funds__label">Add Paper Money</p>
+        <div class="add-funds__row">
+          <input class="add-funds__input" id="addFundsAmount" type="number" min="1" step="1" placeholder="Amount ($)">
+          <button class="add-funds__btn" id="addFundsBtn">Add Funds</button>
+        </div>
+        <p class="add-funds__msg" id="addFundsMsg"></p>
+      </div>
+    </section>
+
     <!-- Open Positions -->
     <section class="panel" id="positionsSection">
       <div class="panel__header reveal">
@@ -79,16 +91,17 @@
             <thead>
               <tr>
                 <th>Market</th>
-                <th>Direction</th>
+                <th>Dir</th>
                 <th>Entry</th>
                 <th>Current</th>
                 <th>Bet</th>
                 <th>P&L</th>
+                <th>Closes</th>
               </tr>
             </thead>
             <tbody id="positionsBody">
               <tr class="table__empty">
-                <td colspan="6">No open positions yet</td>
+                <td colspan="7">No open positions yet</td>
               </tr>
             </tbody>
           </table>

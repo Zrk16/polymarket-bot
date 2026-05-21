@@ -658,6 +658,80 @@ body::after {
 }
 
 
+/* ── Add Funds ──────────────────────────────────────────────── */
+.add-funds {
+  max-width: var(--max-width);
+  margin: 0 auto var(--space-lg);
+  padding: 0 var(--space-md);
+}
+
+.add-funds__inner {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.add-funds__label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+.add-funds__row {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.add-funds__input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  padding: 0.5rem 0.75rem;
+  width: 160px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.add-funds__input:focus {
+  border-color: var(--accent);
+}
+
+.add-funds__btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.add-funds__btn:hover { opacity: 0.85; }
+.add-funds__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.add-funds__msg {
+  font-size: var(--font-size-sm);
+  min-height: 1.2em;
+}
+
+.add-funds__msg--ok  { color: var(--accent); }
+.add-funds__msg--err { color: var(--red); }
+
+
 /* ── Reduced Motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .reveal {
