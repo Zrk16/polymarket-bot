@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 7860
 
-CMD ["python", "server.py"]
+CMD ["python", "-u", "server.py"]
